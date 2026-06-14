@@ -1,0 +1,15 @@
+torch
+torchvision
+matplotlib
+numpy
+wandb
+tqdm
+ema_pytorch
+kaggle
+pillow
+pandas
+scikit-learn
+seaborn
+huggingface_hub
+mediapipe==0.10.14
+opencv-python 
