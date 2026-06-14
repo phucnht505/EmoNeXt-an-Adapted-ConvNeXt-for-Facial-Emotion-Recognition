@@ -1,54 +1,49 @@
-# EmoNeXt Optimized for FER2013
+# EmoNeXt-FER2013: Refined & Optimized
 
-This repository is an optimized implementation of the **EmoNeXt** architecture for Facial Emotion Recognition (FER). It features structural fixes and training enhancements that improve stability and performance on the FER2013 dataset.
+A stabilized, high-performance implementation of the **EmoNeXt** architecture, purpose-built for Facial Emotion Recognition (FER). This repository goes beyond the original implementation by introducing critical architectural bug fixes and overhauling the training pipeline to conquer the challenging FER2013 dataset.
 
-## Key Improvements
+---
 
-### 1. Model Architecture (`models.py`)
-* **Attention Scaling:** Fixed the scale factor in `DotProductSelfAttention` to prevent gradient vanishing, correcting the original implementation.
-* **Spatial Feature Retention:** Modified `forward_features` to keep spatial dimensions (B, C, 7, 7) instead of applying early global pooling.
-* **Token-based Attention:** Updated `forward` to perform attention on 49 spatial tokens, allowing the model to learn relationships between facial regions like eyes and mouth.
-* **Self-Attention Loss:** Corrected the SA Loss calculation to compute the mean per-row for proper row-wise comparison and broadcasting.
-* **Loss Balancing:** Introduced lambda=0.1 for SA Loss and added **Label Smoothing (0.1)** to better handle the noisy labels in FER2013.
+## Under the Hood: What's Changed?
 
-### 2. Training Pipeline (`train.py`)
-* **Scheduler Upgrade:** Replaced warm restarts with a **Linear Warmup (10 epochs) + Cosine Decay** schedule for improved fine-tuning stability.
-* **Validation Fixes:** * Increased validation `batch_size` to 32 (from 1) for significantly faster evaluation.
-* Changed `RandomCrop` to `CenterCrop` in validation to ensure deterministic and consistent results.
-* **Optimization:** Increased Early Stopping patience to **20** and updated to the latest `torch.amp.GradScaler` API.
+We identified several bottlenecks in the original implementation and applied targeted fixes across the model and training loop. 
 
-## Performance Results
+### 1. Architectural Upgrades (`models.py`)
+* **Banishing Gradient Vanishing:** The original `DotProductSelfAttention` had a flawed scale factor. We corrected this to ensure healthy gradient flow during backpropagation.
+* **Preserving Spatial Context:** Instead of aggressively pooling features early on, `forward_features` now retains the `(B, C, 7, 7)` spatial dimensions.
+* **Granular Facial Tracking (49 Tokens):** The forward pass has been rewritten to compute attention across 49 distinct spatial tokens. This empowers the model to map the crucial relationships between localized facial regions (e.g., how the eyes and mouth interact during a smile).
+* **Fixing the Self-Attention (SA) Loss:** We corrected the SA Loss logic to compute the mean per-row. This ensures mathematical correctness for row-wise comparisons and tensor broadcasting.
+* **Taming Noisy Labels:** FER2013 is notoriously noisy. We introduced **Label Smoothing (0.1)** and balanced the loss function by assigning a weight of `λ = 0.1` to the SA Loss, preventing the model from over-indexing on incorrect labels.
 
-The model achieves highly competitive results on the **FER2013** dataset:
+### 2. The Training Engine (`train.py`)
+* **Smarter Learning Rate Scheduling:** Warm restarts were causing instability. We replaced them with a smoother **Linear Warmup (10 epochs)** followed by a **Cosine Decay**, resulting in a much more stable fine-tuning phase.
+* **Deterministic & Fast Validation:** 
+  * Boosted validation speed by bumping the `batch_size` from 1 up to **32**.
+  * Swapped `RandomCrop` for `CenterCrop` during the validation phase to guarantee reproducible, deterministic metrics.
+* **Modernized Optimization:** Upgraded the code to use the latest `torch.amp.GradScaler` API and extended the Early Stopping patience to **20 epochs** to allow the model to fully converge.
 
-| Metric | Value |
-| :--- | :--- |
-| **Test Accuracy (EMA)** | **72.51%** |
-| **Val Accuracy (Best)** | **73.07%** |
-| EmoNeXt-Tiny (Original Paper) | 73.34% |
+---
 
-### Per-class Accuracy (EMA):
-* **Happy:** 89.7% | **Surprise:** 84.1% | **Neutral:** 71.2% | **Disgust:** 71.4%
-* **Angry:** 65.1% | **Sad:** 61.5% | **Fear:** 55.3%
+## Benchmarks on FER2013
 
-## Quick Start
-1. [Install CUDA](https://developer.nvidia.com/cuda-downloads)
+Despite the architectural strictness applied to prevent overfitting, this implementation achieves highly competitive performance, tracking closely with the original paper's metrics.
 
-2. [Install PyTorch 1.13 or later](https://pytorch.org/get-started/locally/)
+| Model / Metric | Overall Accuracy |
+| :--- | :---: |
+| **Our Optimized EmoNeXt (Val - Best)** | **73.07%** |
+| **Our Optimized EmoNeXt (Test - EMA)** | **72.51%** |
+| *Original EmoNeXt-Tiny Paper* | *73.34%* |
 
-3. **Install Dependencies:**
-   ```bash
-   pip install -r requirements.txt
-4. **Run Training:**
-        python train.py --dataset-path='FER2013' 
-                        --batch-size=32 
-                        --gradient-accumulation-steps=2 
-                        --lr=3e-05 --epochs=300 
-                        --amp 
-                        --in_22k 
-                        --num-workers=0 
-                        --model-size='tiny'
+**Emotion Breakdown (EMA Accuracy):**
+> **Happy:** 89.7% | **Surprise:** 84.1% | **Disgust:** 71.4% | **Neutral:** 71.2% | **Angry:** 65.1% | **Sad:** 61.5% | **Fear:** 55.3%
 
-5. [Download model](https://huggingface.co/twuan/EmoNeXt-FER-Optimized)
-## Acknowledgments
-Original EmoNeXt paper: "EmoNeXt: an Adapted ConvNeXt for facial Emotion Recognition". This codebase builds upon the original implementation.   
+---
+
+## Getting Started
+
+Follow these steps to replicate our results or train on your own data.
+
+### Step 1: Environment Setup
+Ensure you have [CUDA](https://developer.nvidia.com/cuda-downloads) configured and [PyTorch (>=1.13)](https://pytorch.org/get-started/locally/) installed. Then, grab the remaining dependencies:
+```bash
+pip install -r requirements.txt
